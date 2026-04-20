@@ -1,7 +1,7 @@
 ---
 name: hand-over-to-kiro
 description: >
-  Delegate tasks to kiro-cli for implementation. Use when user says "/hand-over", "delegate to kiro",
+  Delegate tasks to kiro-cli for implementation. Use when user says "/hand-over-to-kiro", "delegate to kiro",
   "let kiro handle this", "let kiro do this", "pass to kiro", "hand over to kiro", or any variant
   requesting kiro-cli execution. Works in two modes: (1) Plan mode — Claude passes an existing plan
   to kiro-cli for implementation, then reports results. (2) Direct mode — Claude passes user's task
@@ -26,7 +26,7 @@ Do not auto-configure models. The user controls their own kiro-cli settings.
 
 ## Trigger Phrases
 
-Activate on any of: `/hand-over`, `delegate to kiro`, `let kiro handle this`, `let kiro do this`,
+Activate on any of: `/hand-over-to-kiro`, `delegate to kiro`, `let kiro handle this`, `let kiro do this`,
 `pass to kiro`, `hand over to kiro`, or similar phrasing requesting kiro-cli execution.
 
 ## Workflow

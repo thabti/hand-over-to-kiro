@@ -22,7 +22,7 @@ npx skills add thabti/hand-over-to-kiro
 In Claude Code, use any of these triggers:
 
 ```
-/hand-over
+/hand-over-to-kiro
 delegate to kiro
 let kiro handle this
 hand over to kiro
@@ -40,7 +40,7 @@ pass to kiro
 ```
 > Plan a REST API for user management with CRUD endpoints.
 > (Claude produces a plan)
-> /hand-over
+> /hand-over-to-kiro
 ```
 
 **Delegate with constraints:**
