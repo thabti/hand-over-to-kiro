@@ -19,7 +19,7 @@ npx skills add thabti/hand-over-to-kiro
 
 ## Usage
 
-In Claude Code, use any of these:
+In Claude Code, use any of these triggers:
 
 ```
 /hand-over
@@ -27,6 +27,35 @@ delegate to kiro
 let kiro handle this
 hand over to kiro
 pass to kiro
+```
+
+### Examples
+
+**Hand over a specific task:**
+```
+> Add dark mode toggle to the settings page. Hand over to kiro.
+```
+
+**Plan first, then delegate:**
+```
+> Plan a REST API for user management with CRUD endpoints.
+> (Claude produces a plan)
+> /hand-over
+```
+
+**Delegate with constraints:**
+```
+> Let kiro handle writing unit tests for src/auth/. Use vitest, aim for 90% coverage.
+```
+
+**Autonomous mode (opt-in):**
+```
+> Pass to kiro and trust all tools — refactor the database layer to use Drizzle ORM.
+```
+
+**Targeted file work:**
+```
+> Delegate to kiro: fix the broken pagination in src/components/Table.tsx
 ```
 
 ## Prerequisites
