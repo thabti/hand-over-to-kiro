@@ -1,15 +1,15 @@
 # hand-over-to-kiro
 
-A [skills.sh](https://skills.sh) skill for Claude Code that delegates implementation tasks to [kiro-cli](https://kiro.dev).
+A [skills.sh](https://skills.sh) skill for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that delegates implementation tasks to [kiro-cli](https://kiro.dev).
 
-## What it does
+## Why
 
-Lets you hand off tasks from Claude Code to kiro-cli for implementation. Works in two modes:
+Sometimes you want Claude to plan and kiro to build — or you want a second AI agent to handle a chunk of work independently. This skill bridges the two: Claude gathers context, builds a focused prompt, hands it to kiro-cli, and reports back what happened.
 
-- **Plan mode** — Pass an existing plan to kiro-cli for execution
-- **Direct mode** — Pass a task description directly
+## Modes
 
-Claude orchestrates the handoff: prepares context, invokes kiro-cli with `--no-interactive --trust-all-tools`, captures output, and reports results back.
+- **Plan mode** — Claude has an active plan. It passes the full plan to kiro-cli for implementation.
+- **Direct mode** — No plan. Claude forwards your task description with relevant file paths and constraints.
 
 ## Install
 
@@ -19,25 +19,41 @@ npx skills add thabti/hand-over-to-kiro
 
 ## Usage
 
-In Claude Code, say any of:
+In Claude Code, use any of these:
 
-- `/hand-over`
-- `"delegate to kiro"`
-- `"let kiro handle this"`
-- `"hand over to kiro"`
-- `"pass to kiro"`
+```
+/hand-over
+delegate to kiro
+let kiro handle this
+hand over to kiro
+pass to kiro
+```
 
 ## Prerequisites
 
-- [kiro-cli](https://kiro.dev/docs/cli/) installed and authenticated (`kiro-cli login`)
-- The skill auto-configures kiro-cli to use `claude-opus-4.7` (falls back to `claude-opus-4.6`)
+1. **kiro-cli** installed — [install guide](https://kiro.dev/docs/cli/)
+   ```bash
+   curl -fsSL https://cli.kiro.dev/install | bash
+   ```
+2. **Authenticated** — run `kiro-cli login` once
+3. The skill auto-configures kiro-cli to use `claude-opus-4.7` (falls back to `claude-opus-4.6`)
 
-## How it works
+## How It Works
 
 1. Detects whether you have an active plan or a direct request
-2. Builds a self-contained prompt with task, file paths, and constraints
-3. Executes via `kiro-cli chat --no-interactive --trust-all-tools`
-4. Parses output and reports what kiro did — files changed, errors, completion status
+2. Gathers relevant file paths, constraints, and project context
+3. Builds a self-contained prompt (kiro has no memory of your Claude session)
+4. Executes via `kiro-cli chat --no-interactive --trust-all-tools`
+5. Parses output, verifies changes on disk, reports results
+
+## What's Included
+
+```
+SKILL.md                  # Skill definition with agent instructions
+references/kiro-cli.md    # Full kiro-cli command reference
+README.md                 # This file
+LICENSE                   # MIT
+```
 
 ## Credits
 
