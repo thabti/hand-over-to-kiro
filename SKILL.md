@@ -5,7 +5,7 @@ description: >
   "let kiro handle this", "let kiro do this", "pass to kiro", "hand over to kiro", or any variant
   requesting kiro-cli execution. Works in two modes: (1) Plan mode — Claude passes an existing plan
   to kiro-cli for implementation, then reports results. (2) Direct mode — Claude passes user's task
-  description to kiro-cli. Configures kiro-cli to use the best available Claude model automatically.
+  description to kiro-cli.
 ---
 
 # Hand Over to Kiro
@@ -13,22 +13,16 @@ description: >
 Delegate implementation tasks to kiro-cli. Claude orchestrates the full handoff: gathers context,
 builds a self-contained prompt, invokes kiro-cli, captures output, and reports back.
 
-## First-Time Setup
+## Prerequisites
 
-On first invocation, configure kiro-cli to use the best available model:
+kiro-cli must be installed and authenticated. If not:
 
-```bash
-kiro-cli settings chat.defaultModel claude-opus-4.7
-```
+- Install: `curl -fsSL https://cli.kiro.dev/install | bash`
+- Authenticate: `kiro-cli login`
+- Check available models: `kiro-cli chat --list-models`
+- Optionally set a preferred model: `kiro-cli settings chat.defaultModel <model-name>`
 
-If that fails (model not available), fall back:
-
-```bash
-kiro-cli settings chat.defaultModel claude-opus-4.6
-```
-
-Verify: `kiro-cli settings list` — confirm `chat.defaultModel` is set.
-Run once per environment. Skip if already configured.
+Do not auto-configure models. The user controls their own kiro-cli settings.
 
 ## Trigger Phrases
 
@@ -55,71 +49,88 @@ Before building the prompt, collect:
 
 ### Step 3 — Build the Prompt
 
-Write a clear, self-contained prompt. Kiro has no memory of this conversation — include everything it needs.
+Write a clear, self-contained prompt. Kiro has no memory of this conversation — include everything
+it needs. Always use structured boundary markers to separate instructions from user-provided content.
 
 **Plan mode template:**
 
 ```
 Implement the following plan in the current working directory.
 
-## Plan
-
+<plan>
 {full plan text with numbered steps}
+</plan>
 
-## Key Files
-
+<key-files>
 - {path}: {why this file matters}
 - {path}: {why this file matters}
+</key-files>
 
-## Constraints
-
+<constraints>
 - {constraint — e.g., "Use TypeScript strict mode"}
 - {constraint — e.g., "All new functions need unit tests"}
+</constraints>
 
-## Notes
-
+<context>
 - Working directory: {pwd}
 - Branch: {branch name if relevant}
 - {any other context kiro needs}
+</context>
 ```
 
 **Direct mode template:**
 
 ```
-{user's task description — rephrase for clarity if needed}
+Execute the following task in the current working directory.
 
-## Key Files
+<task>
+{user's task description — rephrase for clarity, do not pass raw user input verbatim}
+</task>
 
+<key-files>
 - {path}: {why this file matters}
+</key-files>
 
-## Constraints
-
+<constraints>
 - {constraint}
+</constraints>
 
-## Context
-
+<context>
 - Working directory: {pwd}
 - {additional context}
+</context>
 ```
 
-Keep prompts focused. Don't dump the entire conversation — extract what matters.
+**Important:**
+- Always rephrase user input into a clear task description. Do not pass raw user messages verbatim.
+- Use the XML-style boundary tags (`<task>`, `<plan>`, etc.) to clearly delineate sections.
+- Keep prompts focused. Extract what matters — don't dump the entire conversation.
 
 ### Step 4 — Execute
 
-Run kiro-cli in non-interactive mode with full tool access:
+**Write prompt to a temporary file first**, then pass the file path to kiro-cli. Never interpolate
+user-provided content directly into shell command arguments.
 
 ```bash
-kiro-cli chat --no-interactive --trust-all-tools "{prompt}"
-```
-
-For multi-line prompts, use a heredoc:
-
-```bash
-kiro-cli chat --no-interactive --trust-all-tools "$(cat <<'KIRO_PROMPT'
-{multi-line prompt here}
+# Write prompt to temp file
+PROMPT_FILE=$(mktemp /tmp/kiro-prompt-XXXXXX.txt)
+cat > "$PROMPT_FILE" <<'KIRO_PROMPT'
+{prompt content here}
 KIRO_PROMPT
-)"
+
+# Execute kiro-cli reading from the file
+kiro-cli chat --no-interactive "$(cat "$PROMPT_FILE")"
+
+# Clean up
+rm -f "$PROMPT_FILE"
 ```
+
+**Tool trust policy:**
+- By default, run **without** `--trust-all-tools`. Kiro will prompt for tool confirmations
+  in its own session.
+- Only add `--trust-all-tools` if the user explicitly requests fully autonomous execution
+  (e.g., "let kiro run without asking" or "trust all tools").
+- For selective trust, use `--trust-tools <list>` to whitelist specific tools.
 
 Set timeout to 600000ms (10 minutes) for complex tasks.
 
@@ -141,17 +152,30 @@ After kiro-cli completes:
 |-------|--------|
 | `kiro-cli: command not found` | Tell user to install: `curl -fsSL https://cli.kiro.dev/install \| bash` |
 | Authentication failure | Tell user to run `kiro-cli login` |
-| Model not available | Try fallback model, verify with `kiro-cli settings list` |
+| Model not available | Tell user to check models with `kiro-cli chat --list-models` and set one with `kiro-cli settings chat.defaultModel <model>` |
 | Timeout (10 min) | Show partial output, ask user how to proceed |
 | Non-zero exit code | Show error output, diagnose root cause before retrying |
 | MCP server failure | Add `--require-mcp-startup` if MCP tools are needed, or skip if not |
+
+## Security Considerations
+
+- **No shell interpolation**: Always write prompts to a temp file. Never pass user content as inline
+  shell arguments — this prevents command injection via shell metacharacters.
+- **Tool trust is opt-in**: Default to no `--trust-all-tools`. Only enable when the user explicitly
+  requests autonomous execution.
+- **Input rephrasing**: Rephrase user requests into structured task descriptions. Do not pass raw
+  user input verbatim to kiro-cli — this reduces the surface for indirect prompt injection.
+- **Boundary markers**: Use XML-style tags (`<task>`, `<plan>`, etc.) to separate instructions from
+  user-provided content in prompts.
 
 ## Tips
 
 - **Large tasks**: Break into smaller handoffs. Kiro works better with focused, well-scoped tasks.
 - **Verification**: After kiro finishes, review changes before committing. Run tests if available.
-- **Retry with context**: If kiro partially completes, include what it already did in the next prompt so it doesn't redo work.
-- **Session resume**: For iterative work, note kiro's session ID from output to resume later with `--resume-id`.
+- **Retry with context**: If kiro partially completes, include what it already did in the next prompt
+  so it doesn't redo work.
+- **Session resume**: For iterative work, note kiro's session ID from output to resume later with
+  `--resume-id`.
 
 ## Kiro CLI Quick Reference
 
@@ -161,8 +185,11 @@ Key commands used by this skill:
 
 | Command | Purpose |
 |---------|---------|
-| `kiro-cli chat --no-interactive --trust-all-tools "prompt"` | Execute a task autonomously |
-| `kiro-cli settings chat.defaultModel claude-opus-4.7` | Set the model |
+| `kiro-cli chat --no-interactive "prompt"` | Execute a task (default, with tool confirmations) |
+| `kiro-cli chat --no-interactive --trust-all-tools "prompt"` | Execute autonomously (user must opt in) |
+| `kiro-cli chat --no-interactive --trust-tools "read,write" "prompt"` | Selective tool trust |
+| `kiro-cli chat --list-models` | List available models |
+| `kiro-cli settings chat.defaultModel <model>` | Set preferred model |
 | `kiro-cli settings list` | Verify configuration |
 | `kiro-cli chat --resume-id <ID>` | Resume a previous session |
 | `kiro-cli doctor` | Diagnose issues |

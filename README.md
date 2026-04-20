@@ -36,15 +36,21 @@ pass to kiro
    curl -fsSL https://cli.kiro.dev/install | bash
    ```
 2. **Authenticated** — run `kiro-cli login` once
-3. The skill auto-configures kiro-cli to use `claude-opus-4.7` (falls back to `claude-opus-4.6`)
 
 ## How It Works
 
 1. Detects whether you have an active plan or a direct request
 2. Gathers relevant file paths, constraints, and project context
-3. Builds a self-contained prompt (kiro has no memory of your Claude session)
-4. Executes via `kiro-cli chat --no-interactive --trust-all-tools`
+3. Builds a self-contained prompt with structured boundary markers (kiro has no memory of your Claude session)
+4. Writes prompt to a temp file and executes via `kiro-cli chat --no-interactive`
 5. Parses output, verifies changes on disk, reports results
+
+## Security
+
+- **No shell interpolation** — prompts are written to temp files, not interpolated into shell arguments
+- **Tool trust is opt-in** — runs without `--trust-all-tools` by default; only enables when you explicitly request autonomous execution
+- **Input rephrasing** — user requests are rephrased into structured task descriptions, not passed verbatim
+- **Boundary markers** — XML-style tags separate instructions from user-provided content
 
 ## What's Included
 
